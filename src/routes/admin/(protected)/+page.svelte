@@ -34,6 +34,10 @@
 				<span>Last name</span>
 				<input name="lastName" required placeholder="Lovelace" />
 			</label>
+			<label>
+				<span>Starting rating</span>
+				<input name="startingRating" type="number" min="100" step="1" value="1200" />
+			</label>
 			<button type="submit">Add player</button>
 		</form>
 	</article>
@@ -57,7 +61,7 @@
 							<td colspan="5">No games yet.</td>
 						</tr>
 					{:else}
-					{#each games as game (game.id)}
+						{#each games as game (game.id)}
 							<tr>
 								<td>{format(new Date(game.playedAt), 'MMM d, yyyy')}</td>
 								<td>{game.whiteName}</td>
@@ -84,8 +88,14 @@
 					<div class="player-item">
 						<form class="player-edit" method="POST" action="?/updatePlayer">
 							<input type="hidden" name="playerId" value={player.id} />
-							<input name="firstName" value={player.firstName} />
-							<input name="lastName" value={player.lastName} />
+							<div class="name-row">
+								<input name="firstName" value={player.firstName} placeholder="First" />
+								<input name="lastName" value={player.lastName} placeholder="Last" />
+							</div>
+							<p class="player-rating">
+								<span>Rating</span>
+								<strong>{player.stats.Classical.rating}</strong>
+							</p>
 							<button type="submit">Save</button>
 						</form>
 						<form method="POST" action="?/deletePlayer">
@@ -140,19 +150,19 @@
 			<div class="time-inputs">
 				<label>
 					<span>Start minutes</span>
-					<input type="number" name="startMinutes" min="0" step="1" placeholder="5" />
+					<input type="number" name="startMinutes" min="0" step="1" placeholder="5" value="" />
 				</label>
 
 				<label>
 					<span>Increment (sec)</span>
-					<input type="number" name="incrementSeconds" min="0" step="1" placeholder="3" />
+					<input type="number" name="incrementSeconds" min="0" step="1" placeholder="3" value="" />
 				</label>
 			</div>
 
 			<label>
 				<span>Cause</span>
 				<select name="cause">
-					<option value="">—</option>
+					<option value="" selected>—</option>
 					{#each resultCauses as cause (cause)}
 						<option value={cause}>{cause}</option>
 					{/each}
@@ -176,30 +186,15 @@
 			</label>
 			<label>
 				<span>Blitz upper</span>
-				<input
-					type="number"
-					name="blitzUpper"
-					min={(timeControls.Bullet.upper ?? 0) + 1}
-					value={timeControls.Blitz.upper ?? 0}
-				/>
+				<input type="number" name="blitzUpper" value={timeControls.Blitz.upper ?? 0} />
 			</label>
 			<label>
 				<span>Rapid upper</span>
-				<input
-					type="number"
-					name="rapidUpper"
-					min={(timeControls.Blitz.upper ?? 0) + 1}
-					value={timeControls.Rapid.upper ?? 0}
-				/>
+				<input type="number" name="rapidUpper" value={timeControls.Rapid.upper ?? 0} />
 			</label>
 			<label>
 				<span>Classical upper (optional)</span>
-				<input
-					type="number"
-					name="classicalUpper"
-					min={(timeControls.Rapid.upper ?? 0) + 1}
-					value={timeControls.Classical.upper ?? ''}
-				/>
+				<input type="number" name="classicalUpper" value={timeControls.Classical.upper ?? ''} />
 			</label>
 
 			<button type="submit">Save ranges</button>

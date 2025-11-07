@@ -36,11 +36,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const timeControls = await getTimeControlSettings();
 
 	const players = playersDocs.map((doc) => ({
-		id: doc._id.toString(),
+		id: doc._id!.toString(),
 		firstName: doc.firstName,
 		lastName: doc.lastName,
 		stats: TIME_CONTROL_TYPES.reduce((acc, type) => {
-			acc[type] = doc.stats?.[type] ?? DEFAULT_PLAYER_STATS();
+			acc[type] = doc.stats?.[type] ?? DEFAULT_PLAYER_STATS(doc.startingRating ?? 1200);
 			return acc;
 		}, {} as Record<TimeControlType, ReturnType<typeof DEFAULT_PLAYER_STATS>>)
 	}));
@@ -49,7 +49,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	const gamesDocs = await gamesCollection.find().sort({ playedAt: -1 }).limit(15).toArray();
 	const games = gamesDocs.map((game) => ({
-		id: game._id.toString(),
+		id: game._id!.toString(),
 		whiteId: game.whiteId,
 		blackId: game.blackId,
 		whiteName: playerLookup.get(game.whiteId) ?? 'Unknown',
@@ -74,14 +74,23 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const firstName = String(form.get('firstName') ?? '').trim();
 		const lastName = String(form.get('lastName') ?? '').trim();
+		const startingRatingValue = form.get('startingRating');
+		const startingRating =
+			typeof startingRatingValue === 'string' && startingRatingValue !== ''
+				? Number(startingRatingValue)
+				: 1200;
 
 		if (!firstName || !lastName) {
 			return fail(400, { message: 'First and last name are required.' });
 		}
 
+		if (Number.isNaN(startingRating) || startingRating <= 0) {
+			return fail(400, { message: 'Starting rating must be a positive number.' });
+		}
+
 		const playersCollection = await collections.players();
 		const stats = TIME_CONTROL_TYPES.reduce((acc, type) => {
-			acc[type] = DEFAULT_PLAYER_STATS();
+			acc[type] = DEFAULT_PLAYER_STATS(startingRating);
 			return acc;
 		}, {} as Record<TimeControlType, ReturnType<typeof DEFAULT_PLAYER_STATS>>);
 
@@ -89,6 +98,7 @@ export const actions: Actions = {
 			firstName,
 			lastName,
 			stats,
+			startingRating,
 			createdAt: new Date()
 		});
 
@@ -203,8 +213,8 @@ export const actions: Actions = {
 			.find({ _id: { $in: [whiteObjectId, blackObjectId] } })
 			.toArray();
 
-		const whiteDoc = playersDocs.find((doc) => doc._id.equals(whiteObjectId));
-		const blackDoc = playersDocs.find((doc) => doc._id.equals(blackObjectId));
+		const whiteDoc = playersDocs.find((doc) => doc._id!.equals(whiteObjectId));
+		const blackDoc = playersDocs.find((doc) => doc._id!.equals(blackObjectId));
 
 		if (!whiteDoc || !blackDoc) {
 			return fail(404, { message: 'Player not found.' });
@@ -255,21 +265,47 @@ export const actions: Actions = {
 
 	updateTimeControls: async ({ request }) => {
 		const form = await request.formData();
-		const bulletUpper = Number(form.get('bulletUpper'));
-		const blitzUpper = Number(form.get('blitzUpper'));
-		const rapidUpper = Number(form.get('rapidUpper'));
-		const classicalUpperValue = form.get('classicalUpper');
-		const classicalUpper =
-			typeof classicalUpperValue === 'string' && classicalUpperValue !== ''
-				? Number(classicalUpperValue)
-				: undefined;
+		const timeControls = await getTimeControlSettings();
 
-		if ([bulletUpper, blitzUpper, rapidUpper].some((value) => Number.isNaN(value))) {
-			return fail(400, { message: 'Upper bounds must be numbers.' });
+		const parseOrFallback = (value: FormDataEntryValue | null, fallback: number): number => {
+			if (typeof value !== 'string' || value.trim() === '') return fallback;
+			const parsed = Number(value);
+			if (Number.isNaN(parsed)) {
+				throw fail(400, { message: 'Upper bounds must be numbers.' });
+			}
+			return parsed;
+		};
+
+		let bulletUpper = parseOrFallback(form.get('bulletUpper'), timeControls.Bullet.upper ?? 0);
+		if (bulletUpper < 0) bulletUpper = 0;
+
+		let blitzUpper = parseOrFallback(
+			form.get('blitzUpper'),
+			timeControls.Blitz.upper ?? bulletUpper + 10
+		);
+		if (blitzUpper < bulletUpper + 1) {
+			blitzUpper = bulletUpper + 1;
 		}
 
-		if (classicalUpper !== undefined && Number.isNaN(classicalUpper)) {
-			return fail(400, { message: 'Invalid classical upper bound.' });
+		let rapidUpper = parseOrFallback(
+			form.get('rapidUpper'),
+			timeControls.Rapid.upper ?? blitzUpper + 10
+		);
+		if (rapidUpper < blitzUpper + 1) {
+			rapidUpper = blitzUpper + 1;
+		}
+
+		const classicalUpperRaw = form.get('classicalUpper');
+		let classicalUpper: number | undefined;
+		if (typeof classicalUpperRaw === 'string' && classicalUpperRaw.trim() !== '') {
+			const parsed = Number(classicalUpperRaw);
+			if (Number.isNaN(parsed)) {
+				return fail(400, { message: 'Invalid classical upper bound.' });
+			}
+			classicalUpper = parsed;
+		}
+		if (classicalUpper !== undefined && classicalUpper < rapidUpper + 1) {
+			classicalUpper = rapidUpper + 1;
 		}
 
 		try {

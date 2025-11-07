@@ -19,7 +19,7 @@ export const load: PageServerLoad = async () => {
 		firstName: doc.firstName,
 		lastName: doc.lastName,
 		stats: TIME_CONTROL_TYPES.reduce((acc, type) => {
-			acc[type as TimeControlType] = doc.stats?.[type] ?? DEFAULT_PLAYER_STATS();
+			acc[type as TimeControlType] = doc.stats?.[type] ?? DEFAULT_PLAYER_STATS(doc.startingRating ?? 1200);
 			return acc;
 		}, {} as Record<TimeControlType, ReturnType<typeof DEFAULT_PLAYER_STATS>>),
 		createdAt: doc.createdAt ?? new Date()

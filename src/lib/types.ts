@@ -65,8 +65,8 @@ export interface PlayerWithRecord extends PlayerRecord {
 	stats: Record<TimeControlType, PlayerStats>;
 }
 
-export const DEFAULT_PLAYER_STATS = (): PlayerStats => ({
-	rating: 1200,
+export const DEFAULT_PLAYER_STATS = (rating = 1200): PlayerStats => ({
+	rating,
 	wins: 0,
 	losses: 0,
 	draws: 0
@@ -79,6 +79,7 @@ export interface PlayerDoc {
 	firstName: string;
 	lastName: string;
 	stats?: Record<TimeControlType, PlayerStats>;
+	startingRating?: number;
 	createdAt: Date;
 	updatedAt?: Date;
 }

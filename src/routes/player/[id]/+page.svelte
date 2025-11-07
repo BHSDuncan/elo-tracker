@@ -3,11 +3,14 @@
 	import { TIME_CONTROL_TYPES } from '$lib/types';
 	import { format } from 'date-fns';
 
-	const { data } = $props<{ data: PageData }>();
-	const { player, games, timeControls } = data;
+	const props = $props<{ data: PageData }>();
+	const data = $derived(props.data);
+	const player = $derived(data.player);
+	const games = $derived(data.games);
+	const timeControls = $derived(data.timeControls);
 
 	const formatDate = (date: string) => format(new Date(date), 'MMM d, yyyy');
-	const describeTimeControl = (game: (typeof games)[number]) => {
+	const describeTimeControl = (game: PageData['games'][number]) => {
 		const hasClock = game.startMinutes != null || game.incrementSeconds != null;
 		if (!hasClock) return `${game.timeControlType} (no clock)`;
 		const start = game.startMinutes ?? 0;
@@ -38,10 +41,10 @@
 				<span>W-L-D</span>
 			</p>
 			<p class="range">
-				{#if timeControls[type]?.upper !== undefined}
-					{timeControls[type].lower} &lt;= minutes &lt; {timeControls[type].upper}
+				{#if timeControls[type]?.upper !== undefined && timeControls[type]?.upper !== null && timeControls[type]!.upper > timeControls[type]!.lower}
+					{timeControls[type]!.lower} &lt;= minutes &lt; {timeControls[type]!.upper}
 				{:else if timeControls[type]}
-					{timeControls[type].lower}+ minutes
+					{timeControls[type]!.lower}+ minutes
 				{:else}
 					Range unavailable
 				{/if}

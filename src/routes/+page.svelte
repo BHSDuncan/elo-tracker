@@ -5,6 +5,7 @@
 	const { data } = $props<{ data: PageData }>();
 	const players = data.players;
 	const timeControls = data.timeControls;
+	const DISPLAY_TIME_CONTROLS = [...TIME_CONTROL_TYPES].reverse();
 
 	type SortKey = 'name' | 'rating' | 'wins' | 'losses' | 'draws';
 	type SortDirection = 'asc' | 'desc';
@@ -60,9 +61,10 @@
 	const rangeLabel = (type: TimeControlType) => {
 		const range = timeControls[type];
 		if (!range) return '';
-		return range.upper !== undefined
-			? `${range.lower} <= minutes < ${range.upper}`
-			: `${range.lower} minutes or more`;
+		if (range.upper !== undefined && range.upper !== null && range.upper > range.lower) {
+			return `${range.lower} <= minutes < ${range.upper}`;
+		}
+		return `${range.lower} minutes or more`;
 	};
 </script>
 
@@ -77,12 +79,12 @@
 	</div>
 </section>
 
-{#each TIME_CONTROL_TYPES as type (type)}
+{#each DISPLAY_TIME_CONTROLS as type (type)}
 	<section class="standings-section">
 		<div class="section-header">
 			<div>
-				<p class="eyebrow">{type}</p>
-				<h2>{type} Standings</h2>
+				<p class="eyebrow">Format</p>
+				<h2>{type}</h2>
 			</div>
 			<p class="range">{rangeLabel(type)}</p>
 		</div>
