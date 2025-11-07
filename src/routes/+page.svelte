@@ -61,10 +61,22 @@
 	const rangeLabel = (type: TimeControlType) => {
 		const range = timeControls[type];
 		if (!range) return '';
-		if (range.upper !== undefined && range.upper !== null && range.upper > range.lower) {
-			return `${range.lower} <= minutes < ${range.upper}`;
+
+		const lower =
+			type === 'Bullet'
+				? range.lower
+				: (() => {
+						const index = TIME_CONTROL_TYPES.indexOf(type);
+						if (index <= 0) return range.lower;
+						const prevType = TIME_CONTROL_TYPES[index - 1];
+						const prevUpper = timeControls[prevType]?.upper;
+						return prevUpper ?? range.lower;
+				  })();
+
+		if (range.upper !== undefined && range.upper !== null && range.upper > lower) {
+			return `${lower} <= minutes < ${range.upper}`;
 		}
-		return `${range.lower} minutes or more`;
+		return `${lower} minutes or more`;
 	};
 </script>
 
@@ -76,6 +88,8 @@
 			Track Elo across every time control, compare head-to-head records, and celebrate the fiercest
 			games in town.
 		</p>
+		<br />
+		<p class="tagline">("Ain't no party like a Chess Club party...")</p>
 	</div>
 </section>
 

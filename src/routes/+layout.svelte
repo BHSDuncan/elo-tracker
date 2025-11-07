@@ -30,6 +30,6 @@
 	</main>
 
 	<footer class="app-footer">
-		<p>&copy; {new Date().getFullYear()} Captain Jack Club. Play boldly.</p>
+		<p>&copy; {new Date().getFullYear()} Duncan Brown. Play boldly.</p>
 	</footer>
 </div>

@@ -10,6 +10,14 @@
 	const timeControls = $derived(data.timeControls);
 
 	const formatDate = (date: string) => format(new Date(date), 'MMM d, yyyy');
+	const getLower = (type: (typeof TIME_CONTROL_TYPES)[number]) => {
+		const index = TIME_CONTROL_TYPES.indexOf(type);
+		if (index <= 0) {
+			return timeControls[type]?.lower ?? 0;
+		}
+		const prev = TIME_CONTROL_TYPES[index - 1];
+		return timeControls[prev]?.upper ?? timeControls[type]?.lower ?? 0;
+	};
 	const describeTimeControl = (game: PageData['games'][number]) => {
 		const hasClock = game.startMinutes != null || game.incrementSeconds != null;
 		if (!hasClock) return `${game.timeControlType} (no clock)`;
@@ -41,10 +49,12 @@
 				<span>W-L-D</span>
 			</p>
 			<p class="range">
-				{#if timeControls[type]?.upper !== undefined && timeControls[type]?.upper !== null && timeControls[type]!.upper > timeControls[type]!.lower}
-					{timeControls[type]!.lower} &lt;= minutes &lt; {timeControls[type]!.upper}
-				{:else if timeControls[type]}
-					{timeControls[type]!.lower}+ minutes
+				{#if timeControls[type]}
+					{#if timeControls[type]!.upper !== undefined && timeControls[type]!.upper !== null && timeControls[type]!.upper > getLower(type)}
+						{getLower(type)} &lt;= minutes &lt; {timeControls[type]!.upper}
+					{:else}
+						{getLower(type)} minutes or more
+					{/if}
 				{:else}
 					Range unavailable
 				{/if}
